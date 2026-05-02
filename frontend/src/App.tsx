@@ -80,7 +80,7 @@ const App: React.FC = () => {
           <div className="empty-state">
             <div className="empty-avatar">🩺</div>
             <h3>How can I help you today?</h3>
-            <p>Ask a medical question to get started.</p>
+            <p>Ask a medical question to get started..</p>
           </div>
         )}
 
