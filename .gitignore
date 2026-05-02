@@ -1,0 +1,11 @@
+# Backend ignores
+Backend_AI/.venv/
+Backend_AI/__pycache__/
+Backend_AI/faiss_vector_store/
+Backend_AI/documents.pkl
+Backend_AI/.env
+
+# Frontend ignores
+frontend/node_modules/
+frontend/dist/
+frontend/.env
