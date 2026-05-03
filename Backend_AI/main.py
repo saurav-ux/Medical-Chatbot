@@ -1,62 +1,39 @@
-from fastapi import FastAPI
-from pydantic import BaseModel
-import pickle
+from fastapi import FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
 import re
-
+from core.config import settings
+from connect_memory_with_llm import RAGRetriever
 from langchain_groq import ChatGroq
 from langchain_core.prompts import ChatPromptTemplate
-from connect_memory_with_llm import RAGRetriever
-from dotenv import load_dotenv
-from fastapi.middleware.cors import CORSMiddleware
+from schemas.chat import ChatRequest, ChatResponse
+from services.session_service import (
+    append_message,
+    create_session,
+    get_session,
+)
+from models.session import ChatMessage, SessionDocument
 
-load_dotenv()
-app = FastAPI()
+import pickle
+
+# Load pre-processed documents from pickle file
+with open("documents.pkl", "rb") as f:
+    documents = pickle.load(f)
+
+retriever = RAGRetriever(documents=documents)
+
+app = FastAPI(title="Medical Chatbot API")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # for dev only
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# -----------------------------
-# Load data
-# -----------------------------
-with open("documents.pkl", "rb") as f:
-    final_documents = pickle.load(f)
-
-retriever = RAGRetriever(final_documents)
-
+# retriever = RAGRetriever(documents=None)  # keep your existing loading logic
 llm = ChatGroq(model="llama-3.1-8b-instant")
 
-# -----------------------------
-# Memory (in-memory store)
-# -----------------------------
-sessions = {}
-
-
-# -----------------------------
-# Request Model
-# -----------------------------
-class ChatRequest(BaseModel):
-    session_id: str
-    query: str
-
-
-# -----------------------------
-# Helper: Format history
-# -----------------------------
-def format_history(chat_history):
-    history_text = ""
-    for q, a in chat_history:
-        history_text += f"User: {q}\nAssistant: {a}\n"
-    return history_text
-
-
-# -----------------------------
-# Prompt
-# -----------------------------
 prompt = ChatPromptTemplate.from_template("""
 You are a medical assistant AI.
 
@@ -79,72 +56,60 @@ Answer:
 """)
 
 
-# -----------------------------
-# API Endpoint
-# -----------------------------
+def format_history(chat_history: list[ChatMessage]) -> str:
+    # Limit to last 10 messages (adjust as needed for balance)
+    recent_history = chat_history[-10:]
+    return "\n".join(f"{msg.role.capitalize()}: {msg.text}" for msg in recent_history)
 
 
 @app.get("/")
-def home():
+async def home():
     return {"message": "Medical Chatbot API is running"}
 
 
-@app.post("/chat")
-def chat(request: ChatRequest):
-    session_id = request.session_id
+@app.post("/chat", response_model=ChatResponse)
+async def chat(request: ChatRequest):
+    session = await get_session(request.session_id)
+    if session is None:
+        session = await create_session(request.session_id)
+
     query = request.query
 
-    # Create session if not exists
-    if session_id not in sessions:
-        sessions[session_id] = {"chat_history": [], "current_case": None}
-
-    session = sessions[session_id]
-
-    # -----------------------------
-    # Detect Case Number
-    # -----------------------------
     match = re.search(r"case\s*(\d+)", query.lower())
     if match:
-        session["current_case"] = match.group(1)
+        session.current_case = match.group(1)
 
-    # -----------------------------
-    # Fix "its" queries
-    # -----------------------------
-    if session["current_case"]:
-        if any(word in query.lower() for word in ["its", "examination", "history"]):
-            query = f"Case {session['current_case']} {query}"
+    if session.current_case and any(
+        word in query.lower() for word in ["its", "examination", "history"]
+    ):
+        query = f"Case {session.current_case} {query}"
 
-    # -----------------------------
-    # Retrieve Docs
-    # -----------------------------
     docs = retriever.retrieve(query)
-
     context = "\n\n".join([doc["content"][:500] for doc in docs])
+    history_text = format_history(session.chat_history)
 
-    # -----------------------------
-    # History
-    # -----------------------------
-    history_text = format_history(session["chat_history"])
-
-    # -----------------------------
-    # LLM Call
-    # -----------------------------
-    final_prompt = prompt.format(context=context, question=query, history=history_text)
+    final_prompt = prompt.format(
+        context=context,
+        question=query,
+        history=history_text,
+    )
 
     response = llm.invoke(final_prompt)
-    answer = response.content
+    answer = str(response.content).strip()
+    if isinstance(answer, list):
+        answer = answer[0] if answer else ""
+    else:
+        answer = answer.strip()
 
-    # -----------------------------
-    # Save Memory
-    # -----------------------------
-    session["chat_history"].append((query, answer))
+    await append_message(
+        request.session_id,
+        ChatMessage(role="user", text=query),
+    )
+    await append_message(
+        request.session_id,
+        ChatMessage(role="assistant", text=answer),
+    )
 
-    # Limit history
-    session["chat_history"] = session["chat_history"][-5:]
-
-    # -----------------------------
-    # Return Response
-    # -----------------------------
     return {
         "answer": answer,
         "sources": [
@@ -156,3 +121,21 @@ def chat(request: ChatRequest):
             for doc in docs
         ],
     }
+
+
+@app.get("/chat/{session_id}")
+async def get_chat_history(session_id: str):
+    session = await get_session(session_id)
+    if session is None:
+        return {"messages": []}
+
+    # Format messages to match the frontend Message type
+    messages = [
+        {
+            "role": msg.role,
+            "content": msg.text,
+            "timestamp": msg.timestamp.isoformat() if msg.timestamp else None,
+        }
+        for msg in session.chat_history
+    ]
+    return {"messages": messages}
