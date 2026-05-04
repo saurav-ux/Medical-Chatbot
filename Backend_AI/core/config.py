@@ -6,7 +6,7 @@ load_dotenv()
 
 class Settings(BaseSettings):
     mongodb_uri: str = (
-        "mongodb+srv://sauravanand243:Ejse5gkM6dG0UECt@cluster0.9jeqyld.mongodb.net/?retryWrites=true&w=majority"  # Add default for dev
+        "mongodb+srv://sauravanand243:Ejse5gkM6dG0UECt@clusteqyld.mongodb.net/?retrtes=true&w=majity"  # Add default for dev
     )
     mongodb_db: str = "medical_chatbot"
     mongodb_session_collection: str = "sessions"
