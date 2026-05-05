@@ -10,6 +10,7 @@ from services.session_service import (
     append_message,
     create_session,
     get_session,
+    upsert_session,
 )
 from models.session import ChatMessage, SessionDocument
 
@@ -32,7 +33,7 @@ app.add_middleware(
 )
 
 # retriever = RAGRetriever(documents=None)  # keep your existing loading logic
-llm = ChatGroq(model="llama-3.1-8b-instant")
+llm = ChatGroq(model="llama-3.1-8b-instant", groq_api_key=settings.groq_api_key)  # type: ignore
 
 prompt = ChatPromptTemplate.from_template("""
 You are a medical assistant AI.
@@ -78,6 +79,7 @@ async def chat(request: ChatRequest):
     match = re.search(r"case\s*(\d+)", query.lower())
     if match:
         session.current_case = match.group(1)
+        await upsert_session(session)
 
     if session.current_case and any(
         word in query.lower() for word in ["its", "examination", "history"]
