@@ -5,7 +5,7 @@ class Settings(BaseSettings):
     mongodb_uri: str
     mongodb_db: str = "medical_chatbot"
     mongodb_session_collection: str = "sessions"
-    groq_api_key: str  # Add this line
+    groq_api_key: str
 
     model_config = SettingsConfigDict(
         env_file=".env",
