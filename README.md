@@ -1,7 +1,3 @@
-Here’s a **clean, recruiter-ready README** tailored exactly to your codebase (RAG + Hybrid Retrieval + Reranking + MongoDB).
-You can **directly copy-paste this into GitHub** 👇
-
----
 
 ```markdown
 # 🏥 Medical Chatbot (RAG + Hybrid Retrieval + Reranking)
