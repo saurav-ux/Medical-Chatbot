@@ -1,9 +1,6 @@
 from datetime import datetime
-from typing import Optional
+from typing import Optional, List
 
-from bson import ObjectId
-
-# from ..db.mongo import get_session_collection
 from db.mongo import get_session_collection
 from models.session import ChatMessage, SessionDocument
 
@@ -19,6 +16,12 @@ async def create_session(session_id: str) -> SessionDocument:
     session = SessionDocument(session_id=session_id)
     await collection.insert_one(session.dict())
     return session
+
+
+async def list_sessions() -> List[SessionDocument]:
+    cursor = collection.find().sort("updated_at", -1)
+    sessions = await cursor.to_list(length=100)
+    return [SessionDocument(**raw) for raw in sessions]
 
 
 async def upsert_session(session: SessionDocument):

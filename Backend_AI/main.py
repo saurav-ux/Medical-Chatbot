@@ -10,6 +10,7 @@ from services.session_service import (
     append_message,
     create_session,
     get_session,
+    list_sessions,
     upsert_session,
 )
 from models.session import ChatMessage, SessionDocument
@@ -141,3 +142,22 @@ async def get_chat_history(session_id: str):
         for msg in session.chat_history
     ]
     return {"messages": messages}
+
+
+@app.get("/sessions")
+async def get_sessions():
+    sessions = await list_sessions()
+    return [
+        {
+            "id": session.session_id,
+            "title": next(
+                (msg.text for msg in session.chat_history if msg.role == "user"),
+                "Untitled Chat",
+            )[:50],
+            "lastMessage": (
+                session.chat_history[-1].text if session.chat_history else ""
+            ),
+            "timestamp": session.updated_at.isoformat(),
+        }
+        for session in sessions
+    ]
