@@ -229,7 +229,7 @@ CrossEncoder("cross-encoder/ms-marco-MiniLM-L-6-v2")
 
 ## 👨‍💻 Author
 
-RAG • Hybrid Search • LLM Systems
+Saurav Anand
 
 ---
 
