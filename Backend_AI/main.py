@@ -34,7 +34,7 @@ app.add_middleware(
 )
 
 # retriever = RAGRetriever(documents=None)  # keep your existing loading logic
-llm = ChatGroq(model="llama-3.1-8b-instant", groq_api_key=settings.groq_api_key)  # type: ignore
+llm = ChatGroq(model="openai/gpt-oss-20b", groq_api_key=settings.groq_api_key)  # type: ignore
 
 prompt = ChatPromptTemplate.from_template("""
 You are a medical assistant AI.
