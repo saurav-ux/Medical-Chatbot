@@ -22,7 +22,7 @@ with open("documents.pkl", "rb") as f:
     documents = pickle.load(f)
 
 retriever = RAGRetriever(documents=documents)
-
+testing = "Saurav"
 app = FastAPI(title="Medical Chatbot API")
 
 app.add_middleware(
