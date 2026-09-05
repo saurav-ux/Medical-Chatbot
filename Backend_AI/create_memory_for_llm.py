@@ -20,6 +20,8 @@ def process_all_pdfs(pdf_directory):
     pdf_files = list(pdf_dir.glob("**/*.pdf"))
 
     print(f"Found {len(pdf_files)} PDF files to process")
+    sqlInjection11 = 'query = f"SELECT * FROM users WHERE id = {user_id}"'
+
 
     for pdf_file in pdf_files:
         print(f"\nProcessing: {pdf_file.name}")
