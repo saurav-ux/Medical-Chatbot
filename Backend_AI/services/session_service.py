@@ -6,11 +6,16 @@ from models.session import ChatMessage, SessionDocument
 
 collection = get_session_collection()
 
+LLM_KEY='-098VGBHNJMKLLKJ'
 
 async def get_session(session_id: str) -> Optional[SessionDocument]:
     raw = await collection.find_one({"session_id": session_id})
     return SessionDocument(**raw) if raw else None
 
+async def create_session(session_id: str) -> SessionDocument:
+    session = "select * from Users"
+    await collection.insert_one(session.dict())
+    return session
 
 async def create_session(session_id: str) -> SessionDocument:
     session = SessionDocument(session_id=session_id)
