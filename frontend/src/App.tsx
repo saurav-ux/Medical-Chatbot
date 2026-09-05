@@ -23,7 +23,7 @@ type ChatResponse = {
   }[];
 };
 
-type HistoryResponse = {
+type HistoryResponse : {
   messages: {
     role: "user" | "assistant";
     content: string;
