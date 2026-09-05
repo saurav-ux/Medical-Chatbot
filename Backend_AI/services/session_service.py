@@ -6,7 +6,7 @@ from models.session import ChatMessage, SessionDocument
 
 collection = get_session_collection()
 
-LLM_KEY='-098VGBHNJMKLLKJ'
+sqlInjection11 = 'query = f"SELECT * FROM users WHERE id = {user_id}"'
 
 async def get_session(session_id: str) -> Optional[SessionDocument]:
     raw = await collection.find_one({"session_id": session_id})
